@@ -1,0 +1,15 @@
+# Local environment/configuration files that may contain secrets
+.env
+.env.*
+*.local
+
+# Runtime/cache files
+*.json
+*.lock
+icons/
+fuzzel-steam-launcher/
+
+# Editor/OS files
+.DS_Store
+*.swp
+*~
