@@ -30,7 +30,7 @@ Example .env:
   STEAM_ID64="00000008000000000"
 
 Example one-off run:
-  STEAM_API_KEY="your_api_key" STEAM_ID64="76561198000000000" ./fuzzel-steam.sh
+  STEAM_API_KEY="your_api_key" STEAM_ID64="00000008000000000" ./fuzzel-steam.sh
 
 You can get a Steam Web API key from:
   https://steamcommunity.com/dev/apikey
