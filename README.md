@@ -4,6 +4,8 @@ Launch Steam games from a `fuzzel` dmenu prompt.
 
 The script fetches your owned Steam games, caches the response, builds a searchable `fuzzel` list, and launches the selected game with `steam -applaunch`.
 
+![fuzzel Steam launcher](ss.png)
+
 ## Requirements
 
 - Bash
