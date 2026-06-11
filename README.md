@@ -39,6 +39,12 @@ With `.env` configured:
 ./fuzzel-steam.sh
 ```
 
+Force-refresh the cached Steam games response before opening `fuzzel`:
+
+```sh
+./fuzzel-steam.sh --refresh
+```
+
 Or as a one-off command:
 
 ```sh
@@ -47,4 +53,4 @@ STEAM_API_KEY="your_api_key" STEAM_ID64="00000008000000000" ./fuzzel-steam.sh
 
 ## Cache
 
-Data is cached under `${XDG_CACHE_HOME:-$HOME/.cache}/fuzzel-steam-launcher` and refreshed when the cached games file is older than seven days.
+Data is cached under `${XDG_CACHE_HOME:-$HOME/.cache}/fuzzel-steam-launcher` and refreshed when the cached games file is older than seven days. Use `--refresh` to update the cache immediately.

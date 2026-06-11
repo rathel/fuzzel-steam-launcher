@@ -15,10 +15,15 @@ icons_dir="${cache_dir}/icons"
 api_key="${STEAM_API_KEY:-}"
 steamid="${STEAM_ID64:-}"
 cache_file="${cache_dir}/owned-games.json"
+force_refresh=0
 
 usage() {
     cat <<'EOF'
 Usage: fuzzel-steam.sh
+       fuzzel-steam.sh --refresh
+
+Options:
+  --refresh      Force-refresh the owned games cache before opening fuzzel
 
 Required configuration, provided either by environment variables or a .env file
 next to this script:
@@ -35,6 +40,25 @@ Example one-off run:
 You can get a Steam Web API key from:
   https://steamcommunity.com/dev/apikey
 EOF
+}
+
+parse_args() {
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --refresh)
+                force_refresh=1
+                ;;
+            -h|--help)
+                usage
+                exit 0
+                ;;
+            *)
+                usage >&2
+                exit 1
+                ;;
+        esac
+        shift
+    done
 }
 
 require_env() {
@@ -101,7 +125,7 @@ sync_icons() {
 update_cache() {
     mkdir -p "$cache_dir"
 
-    if [ ! -f "$cache_file" ] || find "$cache_file" -mtime +7 | grep -q .; then
+    if [ "$force_refresh" -eq 1 ] || [ ! -f "$cache_file" ] || find "$cache_file" -mtime +7 | grep -q .; then
         curl -fsSL \
             --get \
             --data-urlencode "key=${api_key}" \
@@ -134,6 +158,7 @@ main() {
     steam -applaunch "$choiceid" >/dev/null 2>&1 &
 }
 
+parse_args "$@"
 require_env
 depchecks
 update_cache
