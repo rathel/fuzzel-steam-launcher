@@ -140,12 +140,40 @@ update_cache() {
     sync_icons
 }
 
+steam_library_paths() {
+    local library_file="${HOME}/.steam/steam/steamapps/libraryfolders.vdf"
+
+    printf '%s\n' "${HOME}/.steam/steam"
+
+    if [ -f "$library_file" ]; then
+        awk -F '"' '
+            $2 == "path" { print $4 }
+            $2 ~ /^[0-9]+$/ && $4 ~ /^\// { print $4 }
+        ' "$library_file"
+    fi
+}
+
+installed_appids() {
+    local library manifest appid
+
+    while IFS= read -r library; do
+        for manifest in "${library}/steamapps"/appmanifest_*.acf; do
+            [ -f "$manifest" ] || continue
+            appid="${manifest##*/appmanifest_}"
+            printf '%s\n' "${appid%.acf}"
+        done
+    done < <(steam_library_paths | sort -u)
+}
+
 build_game_list() {
-    jq --arg icons "$icons_dir" -r '
+    local installed
+    installed="$(installed_appids | jq -Rn 'reduce inputs as $appid ({}; .[$appid] = true)')"
+
+    jq --arg icons "$icons_dir" --argjson installed "$installed" -r '
         .response.games
         | sort_by(.name)
-        | .[]
-        | "\(.name) - \(.appid)\u0000icon\u001f\($icons)/\(.appid).png,steam"
+        | .[] as $game
+        | "\(if $installed[$game.appid | tostring] then "[i] " else "" end)\($game.name) - \($game.appid)\u0000icon\u001f\($icons)/\($game.appid).png,steam"
     ' "$cache_file"
 }
 

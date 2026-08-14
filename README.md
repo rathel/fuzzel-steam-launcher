@@ -2,7 +2,7 @@
 
 Launch Steam games from a `fuzzel` dmenu prompt.
 
-The script fetches your owned Steam games, caches the response, builds a searchable `fuzzel` list, and launches the selected game with `steam -applaunch`.
+The script fetches your owned Steam games, caches the response, builds a searchable `fuzzel` list, and launches the selected game with `steam -applaunch`. Locally installed games are prefixed with `[i]`.
 
 ![fuzzel Steam launcher](ss.png)
 
