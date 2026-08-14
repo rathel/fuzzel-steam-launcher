@@ -178,7 +178,7 @@ build_game_list() {
 }
 
 main() {
-    choice="$(build_game_list | fuzzel --dmenu --prompt "Games: ")"
+    choice="$(build_game_list | fuzzel --dmenu --no-sort --prompt "Games: ")"
 
     [ -z "$choice" ] && exit 0
 
