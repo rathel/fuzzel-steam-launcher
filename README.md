@@ -2,7 +2,7 @@
 
 Launch Steam games from a `fuzzel` dmenu prompt.
 
-The script fetches your owned Steam games, caches the response, builds a searchable `fuzzel` list, and launches the selected game with `steam -applaunch`. Locally installed games are prefixed with `[i]`.
+The script fetches your owned Steam games, caches the response, builds a searchable `fuzzel` list, and launches the selected game with Steam.
 
 ![fuzzel Steam launcher](ss.png)
 
@@ -10,9 +10,11 @@ The script fetches your owned Steam games, caches the response, builds a searcha
 
 - Bash
 - `curl`
+- `iconv`
 - `jq`
 - `fuzzel`
-- Steam client
+- `flatpak` (only when using Flatpak Steam)
+- Steam client (native or Flatpak)
 - ImageMagick (`magick` or `convert`) for local icon conversion
 
 ## Configuration
@@ -30,6 +32,10 @@ STEAM_ID64="00000000000000000"
 ```
 
 `.env` is ignored by git, so keep your real values there and do not commit it.
+
+The launcher automatically uses the native `steam` command when available, or the
+Flatpak app `com.valvesoftware.Steam` otherwise. It also checks the corresponding
+Steam data directory when marking installed games and loading icons.
 
 ## Usage
 

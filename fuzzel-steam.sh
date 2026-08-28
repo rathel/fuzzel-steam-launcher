@@ -16,6 +16,8 @@ api_key="${STEAM_API_KEY:-}"
 steamid="${STEAM_ID64:-}"
 cache_file="${cache_dir}/owned-games.json"
 force_refresh=0
+steam_cmd=()
+steam_root=""
 
 usage() {
     cat <<'EOF'
@@ -68,6 +70,29 @@ require_env() {
     fi
 }
 
+detect_steam() {
+    if command -v steam >/dev/null 2>&1; then
+        steam_cmd=(steam)
+        steam_root="${HOME}/.steam/steam"
+        return
+    fi
+
+    if command -v flatpak >/dev/null 2>&1 && flatpak info com.valvesoftware.Steam >/dev/null 2>&1; then
+        steam_cmd=(flatpak run com.valvesoftware.Steam)
+        steam_root="${HOME}/.var/app/com.valvesoftware.Steam/.local/share/Steam"
+
+        # Some older Flatpak Steam installations used the app data directory
+        # directly instead of the normal per-app home directory.
+        if [ ! -d "$steam_root" ] && [ -d "${HOME}/.var/app/com.valvesoftware.Steam/data/Steam" ]; then
+            steam_root="${HOME}/.var/app/com.valvesoftware.Steam/data/Steam"
+        fi
+        return
+    fi
+
+    echo "Please install Steam (native or Flatpak)." >&2
+    exit 1
+}
+
 depchecks() {
     if ! command -v jq >/dev/null 2>&1; then
         echo "Please install jq." >&2
@@ -79,15 +104,17 @@ depchecks() {
         exit 1
     fi
 
+    if ! command -v iconv >/dev/null 2>&1; then
+        echo "Please install iconv." >&2
+        exit 1
+    fi
+
     if ! command -v fuzzel >/dev/null 2>&1; then
         echo "Please install fuzzel." >&2
         exit 1
     fi
 
-    if ! command -v steam >/dev/null 2>&1; then
-        echo "Please install Steam." >&2
-        exit 1
-    fi
+    detect_steam
 
     if ! command -v magick >/dev/null 2>&1 && ! command -v convert >/dev/null 2>&1; then
         echo "Please install ImageMagick (magick or convert)." >&2
@@ -110,10 +137,17 @@ sync_icons() {
             fi
         fi
 
-        jq -r '.response.games[] | "\(.appid) \(.img_icon_url)"' "$cache_file" | while read -r appid icon_hash; do
+        local installed
+        installed="$(installed_appids | jq -Rn 'reduce inputs as $appid ({}; .[$appid] = true)')"
+
+        jq --argjson installed "$installed" -r '
+            .response.games[]
+            | select($installed[.appid | tostring])
+            | "\(.appid) \(.img_icon_url)"
+        ' "$cache_file" | while read -r appid icon_hash; do
             png_file="${icons_dir}/${appid}.png"
             if [ ! -f "$png_file" ]; then
-                jpg_file="${HOME}/.steam/steam/appcache/librarycache/${appid}/${icon_hash}.jpg"
+                jpg_file="${steam_root}/appcache/librarycache/${appid}/${icon_hash}.jpg"
                 if [ -f "$jpg_file" ]; then
                     "$cmd" "$jpg_file" "$png_file"
                 fi
@@ -141,9 +175,9 @@ update_cache() {
 }
 
 steam_library_paths() {
-    local library_file="${HOME}/.steam/steam/steamapps/libraryfolders.vdf"
+    local library_file="${steam_root}/steamapps/libraryfolders.vdf"
 
-    printf '%s\n' "${HOME}/.steam/steam"
+    printf '%s\n' "$steam_root"
 
     if [ -f "$library_file" ]; then
         awk -F '"' '
@@ -173,8 +207,8 @@ build_game_list() {
         .response.games
         | sort_by(.name)
         | .[] as $game
-        | "\(if $installed[$game.appid | tostring] then "[i] " else "" end)\($game.name) - \($game.appid)\u0000icon\u001f\($icons)/\($game.appid).png,steam"
-    ' "$cache_file"
+        | "\($game.name) - \($game.appid)\u0000icon\u001f\(if $installed[$game.appid | tostring] then "\($icons)/\($game.appid).png,steam" else "steam" end)"
+    ' "$cache_file" | iconv -f UTF-8 -t ASCII//TRANSLIT
 }
 
 main() {
@@ -183,7 +217,7 @@ main() {
     [ -z "$choice" ] && exit 0
 
     choiceid="$(awk '{print $NF}' <<< "$choice")"
-    steam -applaunch "$choiceid" >/dev/null 2>&1 &
+    "${steam_cmd[@]}" -applaunch "$choiceid" >/dev/null 2>&1 &
 }
 
 parse_args "$@"
